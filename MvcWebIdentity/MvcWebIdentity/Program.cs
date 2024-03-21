@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using MvcWebIdentity.Context;
+using MvcWebIdentity.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,7 +14,12 @@ var connection = builder.Configuration.GetConnectionString("DataBase");
 
 builder.Services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connection));
 
+
 builder.Services.AddIdentity<IdentityUser, IdentityRole>().AddEntityFrameworkStores<AppDbContext>();
+
+
+builder.Services.AddScoped<ISeedUserRoleInicial, SeedUserRoleInicial>();
+
 
 var app = builder.Build();
 
@@ -30,6 +36,11 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+
+await CriarPerfisUsuariosAsync(app);
+
+
+
 app.UseAuthentication();
 
 app.UseAuthorization();
@@ -39,3 +50,22 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();
+
+
+
+async Task CriarPerfisUsuariosAsync(WebApplication app)
+{
+    var scopedFactory = app.Services.GetService<IServiceScopeFactory>();
+
+    using (var scope = scopedFactory.CreateScope())
+    {
+        var service = scope.ServiceProvider.GetService<ISeedUserRoleInicial>();
+
+        await service.SeedRolesAsync();
+        await service.SeedUserAsync();
+
+    }
+
+}
+
+ 
